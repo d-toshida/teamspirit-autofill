@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="manifest.open_in_tab" content="true" />
+  <link rel="stylesheet" href="options.css">
+  <title>設定</title>
+</head>
+<body>
+  <div class="wrap">
+    <h1>入力の既定値</h1>
+    <p>自動入力のテンプレート外項目の初期値です。このブラウザにだけ保存されます。</p>
+
+    <div class="field">
+      <label for="workPatternDefault">既定の勤務パターン</label>
+      <p class="hint">勤務パターンの選択肢は、勤務時間変更画面の「勤務パターン選択肢を同期」で設定します。</p>
+      <select id="workPatternDefault"></select>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="clockIn">出勤（HHmm）</label>
+        <input id="clockIn" type="text" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="clockOut">退勤（HHmm）</label>
+        <input id="clockOut" type="text" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="breakTime">休憩時間（HHmm）</label>
+        <input id="breakTime" type="text" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field">
+      <label for="workLocation">勤務場所</label>
+      <select id="workLocation"></select>
+    </div>
+    <div class="field check">
+      <label>
+        <input id="stepByStep" type="checkbox">
+        ステップごとに自動入力する
+      </label>
+    </div>
+    <div class="field check">
+      <label>
+        <input id="includeDayApply" type="checkbox">
+        申請まで行う
+      </label>
+    </div>
+
+    <h1>工数テンプレート</h1>
+    <p>複数のテンプレートを登録できます。追加は工数入力画面の「テンプレートに保存」で行います。名前以外の項目は必須です。最後の1件は削除できません。製品分野・業務区分・業務種別_技術要素・アウトプット名称はお気に入りから検索します。作業時間は出勤・退勤・休憩から計算します。</p>
+    <div class="field">
+      <label for="templateList">編集するテンプレート</label>
+      <div class="template-list-row">
+        <select id="templateList"></select>
+        <button type="button" id="templateDelete" class="btn danger">削除</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="templateName">名前（任意）</label>
+      <p class="hint">空のときは業務内容を表示名として使用します。表示名の重複はできません。</p>
+      <input id="templateName" type="text">
+    </div>
+    <div class="field">
+      <label for="templateWorkContent">業務内容</label>
+      <input id="templateWorkContent" type="text">
+    </div>
+    <div class="field">
+      <label for="templateProductField">製品分野</label>
+      <input id="templateProductField" type="text">
+    </div>
+    <div class="field">
+      <label for="templateWorkCategory">業務区分</label>
+      <input id="templateWorkCategory" type="text">
+    </div>
+    <div class="field">
+      <label for="templateTechElement1">業務種別_技術要素１</label>
+      <input id="templateTechElement1" type="text">
+    </div>
+    <div class="field">
+      <label for="templateTechElement2">業務種別_技術要素２</label>
+      <input id="templateTechElement2" type="text">
+    </div>
+    <div class="field">
+      <label for="templateTechElement3">業務種別_技術要素3</label>
+      <input id="templateTechElement3" type="text">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="templateKnowledge">知識</label>
+        <select id="templateKnowledge"></select>
+      </div>
+      <div class="field">
+        <label for="templateSkill">技能</label>
+        <select id="templateSkill"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="templateOutputName">アウトプット名称</label>
+      <input id="templateOutputName" type="text">
+    </div>
+
+    <h1>その他の設定</h1>
+    <p>それぞれの待ち時間は0以上の整数で入力してください。</p>
+    <div class="field">
+      <label for="autoStepDelayMs">自動ステップ間の待ち（ミリ秒）</label>
+      <p class="hint">連続する自動ステップのあいだに挟む待ちです。既定値は 100 ミリ秒です。</p>
+      <input id="autoStepDelayMs" type="text" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="loadWaitIntervalMs">ロード待ちの間隔（ミリ秒）</label>
+      <p class="hint">お気に入り検索のロード待ちで、次の操作対象の表示を確認し未検出ならその間隔待機する間隔です。既定値は 500 ミリ秒です。</p>
+      <input id="loadWaitIntervalMs" type="text" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="loadWaitTimeoutMs">ロード待ちのタイムアウト（ミリ秒）</label>
+      <p class="hint">お気に入り検索のロード待ちで、次の操作対象の表示を確認し未検出ならその間隔待機するタイムアウトです。既定値は 10000 ミリ秒です。</p>
+      <input id="loadWaitTimeoutMs" type="text" inputmode="numeric">
+    </div>
+
+    <div class="row">
+      <button type="button" id="saveFill" class="btn">設定を保存</button>
+    </div>
+    <p id="fillSaveStatus" class="hint"></p>
+
+    <p style="margin-top:18px;">
+      設定ファイルのエクスポートとインポートができます。
+    </p>
+    <div class="row">
+      <button id="export" class="btn secondary">設定をエクスポート</button>
+      <button id="import" class="btn secondary">設定をインポート</button>
+    </div>
+    <input type="file" id="fileInput" accept=".json" style="display:none;">
+  </div>
+  <script type="module" src="options.ts"></script>
+</body>
+</html>

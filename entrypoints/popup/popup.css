@@ -1,0 +1,22 @@
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", sans-serif;
+  color: #1a1a1a;
+  margin: 0;
+  background: #f5f6f8;
+}
+.wrap { padding: 16px; }
+.popup { width: 320px; }
+h1 { font-size: 15px; margin: 0 0 12px; }
+p { font-size: 13px; line-height: 1.6; margin: 0 0 12px; }
+.status {
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #eef1f5;
+  margin-bottom: 12px;
+  min-height: 36px;
+}
+a.link { font-size: 13px; color: #1f6feb; text-decoration: none; }
+a.link:hover { text-decoration: underline; }
+.hint { font-size: 12px; color: #6b7280; margin: 6px 0 14px; }

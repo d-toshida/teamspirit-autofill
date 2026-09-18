@@ -1,0 +1,242 @@
+.ts-row-fill-btn,
+.ts-work-pattern-sync-btn,
+.ts-work-hour-template-save-btn {
+  display: inline-block;
+  line-height: 1.4;
+  border: 1px solid #1f6feb;
+  border-radius: 4px;
+  background: #1f6feb;
+  color: #fff;
+  cursor: pointer;
+  vertical-align: middle;
+  font-family: inherit;
+}
+.ts-row-fill-btn,
+.ts-work-hour-template-save-btn {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.ts-row-fill-btn:hover,
+.ts-work-pattern-sync-btn:hover,
+.ts-work-hour-template-save-btn:hover {
+  background: #1a5fd0;
+}
+.ts-row-fill-cell {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+.ts-row-fill-cell > button {
+  flex: 0 0 auto;
+}
+.ts-application-col {
+  box-sizing: border-box !important;
+  width: var(--ts-application-col-width, max-content) !important;
+  flex: none !important;
+  white-space: nowrap;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+.ts-row-fill-btn {
+  margin-right: 6px;
+}
+.ts-row-fill-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.ts-work-pattern-sync-btn {
+  margin: 12px 0 0;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.ts-work-hour-template-save-btn {
+  margin-left: 8px;
+}
+
+.ts-autofill-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  font-family: -apple-system, "Helvetica Neue", "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+.ts-autofill-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.35);
+}
+.ts-autofill-panel {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 24px));
+  max-height: calc(100vh - 72px);
+  overflow: auto;
+  background: #fff;
+  color: #1a1a1a;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+  padding: 16px;
+}
+.ts-autofill-panel h2 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+.ts-autofill-field {
+  margin-bottom: 10px;
+}
+.ts-autofill-field-row {
+  display: flex;
+  gap: 12px;
+}
+.ts-autofill-field-row .ts-autofill-field {
+  flex: 1;
+  min-width: 0;
+}
+.ts-autofill-field label {
+  display: block;
+  font-size: 12px;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+.ts-autofill-field input,
+.ts-autofill-field select {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+  padding: 8px;
+  border: 1px solid #ccd2da;
+  border-radius: 8px;
+  background: #fff;
+}
+.ts-autofill-template-preview {
+  margin: -2px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.ts-autofill-preview-row {
+  display: grid;
+  grid-template-columns: 10.5em 1fr;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ts-autofill-preview-label {
+  color: #4b5563;
+}
+.ts-autofill-preview-value {
+  color: #1a1a1a;
+  word-break: break-all;
+}
+.ts-autofill-note {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.ts-autofill-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 12px 0 0;
+  cursor: pointer;
+}
+.ts-autofill-check input {
+  margin: 0;
+}
+.ts-autofill-status {
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #eef1f5;
+  margin-bottom: 12px;
+  min-height: 2.4em;
+}
+.ts-autofill-status.error {
+  background: #fde8e8;
+  color: #b3261e;
+}
+.ts-autofill-root.ts-autofill-docked {
+  inset: auto;
+  top: 12px;
+  right: 12px;
+  width: min(400px, calc(100% - 24px));
+  height: auto;
+  pointer-events: none;
+}
+.ts-autofill-root.ts-autofill-docked .ts-autofill-backdrop {
+  display: none;
+}
+.ts-autofill-root.ts-autofill-docked .ts-autofill-panel {
+  position: static;
+  left: auto;
+  transform: none;
+  width: 100%;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  pointer-events: auto;
+}
+.ts-autofill-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ts-autofill-log {
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow: auto;
+  margin: 0 0 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  user-select: text;
+}
+.ts-autofill-actions button {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #1f6feb;
+  color: #fff;
+}
+.ts-autofill-actions button:hover {
+  background: #1a5fd0;
+}
+.ts-autofill-actions button.ts-secondary {
+  background: #eef1f5;
+  color: #1a1a1a;
+}
+.ts-autofill-actions button.ts-secondary:hover {
+  background: #e2e6eb;
+}
+.ts-autofill-actions button.ts-danger {
+  background: #b3261e;
+}
+.ts-autofill-actions button.ts-danger:hover {
+  background: #9a211a;
+}
+.ts-autofill-actions button:disabled,
+.ts-autofill-actions button:disabled:hover {
+  opacity: 0.55;
+  cursor: default;
+}
+.ts-autofill-existing {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0 0 12px;
+  padding: 0;
+}
