@@ -346,6 +346,8 @@ export async function runCurrentFillStep(ui: FillRunUi) {
         const groupForNextAuto = currentManualGroup();
         const nextAutoIsFirstOfManualGroup =
           !!groupForNextAuto && fillSession.stepIndex === groupForNextAuto.autoStart;
+          
+        // 自動ステップ間の待ちは、同じ手動ステップ内だけ。手動ステップの最後のあとには挟まない。
         if (!nextAutoIsFirstOfManualGroup) {
           await waitMs(autoStepDelayMs);
           if (isRunCancelled(runGeneration)) return;

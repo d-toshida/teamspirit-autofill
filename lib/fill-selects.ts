@@ -16,6 +16,7 @@ function appendOption(selectEl: HTMLSelectElement, value: string, text: string) 
   return option;
 }
 
+// 「選択してください」は既定が未選択のときだけ出す。この項目は選べず、未選択へ戻す操作は無い。
 export function populateWorkPatternSelect(
   selectEl: HTMLSelectElement,
   patterns: WorkPattern[],

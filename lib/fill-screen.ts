@@ -122,6 +122,9 @@ export function describeTimesheetReturnWait() {
   ].join(' ');
 }
 
+// 連続実行では、オーバーレイの出現から消滅までをこの呼び出しの1つのタイムアウトで待つ。
+// ステップ実行では、オーバーレイが無く勤務表に戻っていれば進む。ロード中に進めたときは消えるまで待つ。
+// 行の保存は閉じる画面が無いことがあり、オーバーレイが消えて勤務表が表示されていれば足りる。
 export async function waitUntilReturnedToTimesheet(
   intervalMs: number,
   timeoutMs: number,
@@ -340,6 +343,7 @@ export function displayedOverlayCaption(caption: string) {
   return null;
 }
 
+// 出勤欄を開いたあとのロード待ちは、勤務時間変更の画面では満たさない。同じ「出勤」がそちらにもある。
 export function displayedAttendanceCaption() {
   const workTimeChange = workTimeChangeDialog();
   for (const overlay of overlayRoots()) {
@@ -362,7 +366,8 @@ function blurActiveTextField() {
   (active as HTMLElement).blur();
 }
 
-// 行の保存と文言が同じで、勤務時間変更側にはダイアログ名が付かない。保存直前に時刻欄からフォーカスを外す。
+// 行の保存と文言が同じで、勤務時間変更側にはダイアログ名が付かない。
+// 保存直前に時刻欄からフォーカスを外す。整形前に保存すると時刻が反映されない。
 export function clickTimeDialogSave() {
   blurActiveTextField();
   const table = timesheetTable();
@@ -416,7 +421,8 @@ export function clickWorkHourLookup(index: number, probe: FillProbe) {
   return activateClick(workHourLookupClickTarget(lookupItem));
 }
 
-// お気に入り照合は先頭6桁。一致する候補が複数あることは無い。
+// お気に入り照合は、文字列中で最初の6桁。6桁以降の表記は画面により異なる。6桁が取れなければ失敗。
+// 一致する候補が複数あることは無い。保存値と確認画面・設定画面の表示は全文のまま。
 function workHourFavoriteCode(value: unknown) {
   const match = comparableText(value).match(/\d{6}/);
   return match ? match[0] : '';
@@ -641,6 +647,8 @@ function visiblePatternOptions() {
   return workPatternOptionNodes().filter(isDisplayed);
 }
 
+// 閉じていても値が読めるときは開かない。
+// 同期ボタンの押下でドロップダウンが閉じるため、読めないときは開く。
 export async function openWorkPatternCombobox() {
   const combo = findWorkPatternCombobox();
   if (!combo) return false;

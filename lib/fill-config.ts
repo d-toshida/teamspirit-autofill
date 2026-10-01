@@ -65,6 +65,7 @@ const SEED_DEFAULTS: FillDefaults = {
   includeDayApply: false
 };
 
+// 候補の Key は、`WPC-00001234_固定_...` のような生値を `_` で区切った先頭。区切りが無ければ生値全体
 function workPatternFromText(text: string): WorkPattern {
   return { id: text.split('_')[0] || text, text };
 }
@@ -106,6 +107,7 @@ type TemplateItemSlot =
   | { kind: 'favorite'; fieldName: string; optionsFieldId: string }
   | { kind: 'dropdown'; index: number; fieldName: string; optionsFieldId: string };
 
+// 画面上のジョブは変更不可の表示であり、テンプレートにも自動入力にも含めない。
 const TEMPLATE_ITEM_SLOTS: readonly TemplateItemSlot[] = [
   { kind: 'favorite', fieldName: '製品分野', optionsFieldId: 'templateProductField' },
   { kind: 'favorite', fieldName: '業務区分', optionsFieldId: 'templateWorkCategory' },

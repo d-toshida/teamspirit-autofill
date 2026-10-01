@@ -59,6 +59,7 @@ export function setNativeValue(el: Element, value: unknown) {
 }
 
 // フォーカスイン → 入力 → blur で画面側の時刻整形を発火する。
+// 欄からフォーカスが外れると `09:30` のように整形される。この整形の前に保存すると反映されない。
 export function commitTextField(el: Element, value: unknown) {
   const field = el as HTMLInputElement;
   if (typeof field.scrollIntoView === 'function') {

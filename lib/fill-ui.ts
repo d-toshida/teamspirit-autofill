@@ -279,6 +279,7 @@ function copyFillLogsFallback(text: string, done: () => void) {
   area.remove();
 }
 
+// 同期ボタンを押すとドロップダウンは閉じる。開始時点では選択肢は出ていない。
 async function syncWorkPatternCatalog() {
   if (!findWorkPatternCombobox()) {
     notify(findNamedDialog('勤務時間変更') ? '勤務パターン欄が見つかりません' : '勤務時間変更の画面が見つかりません');

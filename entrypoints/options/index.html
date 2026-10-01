@@ -109,12 +109,12 @@
     </div>
     <div class="field">
       <label for="loadWaitIntervalMs">ロード待ちの間隔（ミリ秒）</label>
-      <p class="hint">お気に入り検索のロード待ちで、次の操作対象の表示を確認し未検出ならその間隔待機する間隔です。既定値は 500 ミリ秒です。</p>
+      <p class="hint">次の操作対象の表示、または勤務表へ戻ったことを確認し、未完了ならこの間隔だけ待って再確認します。既定値は 500 ミリ秒です。</p>
       <input id="loadWaitIntervalMs" type="text" inputmode="numeric">
     </div>
     <div class="field">
       <label for="loadWaitTimeoutMs">ロード待ちのタイムアウト（ミリ秒）</label>
-      <p class="hint">お気に入り検索のロード待ちで、次の操作対象の表示を確認し未検出ならその間隔待機するタイムアウトです。既定値は 10000 ミリ秒です。</p>
+      <p class="hint">その確認をこの時間まで繰り返します。超えても未完了なら失敗します。既定値は 10000 ミリ秒です。</p>
       <input id="loadWaitTimeoutMs" type="text" inputmode="numeric">
     </div>
 
