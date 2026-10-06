@@ -1,6 +1,7 @@
 // 日次行の「入力」から、確認UI・上書き確認のあと、連続実行またはステップ実行で1日分を入れる。
 
 import {
+  SEED_DEFAULTS,
   TEMPLATE_ITEM_SLOTS,
   templatePreviewRows,
   workPatternTextById,
@@ -601,9 +602,9 @@ function showFillForm(defaults: FillDefaults, templates: FillTemplate[], workPat
 
   const timeRow = document.createElement('div');
   timeRow.className = 'ts-autofill-field-row';
-  const clockInInput = addTimeInput(timeRow, 'ts-autofill-clock-in', '始業時刻（HHmm）', defaults.clockIn, '930');
-  const clockOutInput = addTimeInput(timeRow, 'ts-autofill-clock-out', '終業時刻（HHmm）', defaults.clockOut, '1730');
-  const breakTimeInput = addTimeInput(timeRow, 'ts-autofill-break-time', '休憩時間（HHmm）', defaults.breakTime, '100');
+  const clockInInput = addTimeInput(timeRow, 'ts-autofill-clock-in', '始業時刻（HHmm）', defaults.clockIn, SEED_DEFAULTS.clockIn);
+  const clockOutInput = addTimeInput(timeRow, 'ts-autofill-clock-out', '終業時刻（HHmm）', defaults.clockOut, SEED_DEFAULTS.clockOut);
+  const breakTimeInput = addTimeInput(timeRow, 'ts-autofill-break-time', '休憩時間（HHmm）', defaults.breakTime, SEED_DEFAULTS.breakTime);
   body.appendChild(timeRow);
 
   const locationSelect = document.createElement('select');

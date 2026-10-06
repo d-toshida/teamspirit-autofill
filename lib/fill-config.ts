@@ -44,7 +44,7 @@ type FillWaitField = {
 
 // 待ち時間のキー文字列はこの表だけ。
 const FILL_WAIT_FIELDS = {
-  autoStepDelayMs: { storageKey: 'auto_step_delay_ms', defaultValue: 100 },
+  autoStepDelayMs: { storageKey: 'auto_step_delay_ms', defaultValue: 200 },
   loadWaitIntervalMs: { storageKey: 'load_wait_interval_ms', defaultValue: 500 },
   loadWaitTimeoutMs: { storageKey: 'load_wait_timeout_ms', defaultValue: 10000 }
 } as const satisfies Record<string, FillWaitField>;
