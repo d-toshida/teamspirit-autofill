@@ -39,14 +39,8 @@ export type FillAutoStep = {
   run: () => boolean | Promise<boolean>;
 };
 
-export type FillManual = {
-  label: string;
-  targetText?: string;
-  skipWhen?: string;
-  failMessage?: string;
-  targetIsDisplayed?: () => boolean;
-  returnsToTimesheet?: boolean;
-  run?: () => boolean | Promise<boolean>;
+export type FillManual = Omit<FillAutoStep, 'run'> & {
+  run?: FillAutoStep['run'];
   autos?: FillAutoStep[];
 };
 

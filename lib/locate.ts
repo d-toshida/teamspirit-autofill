@@ -5,7 +5,6 @@ import {
   MAX_LABEL_CHARS,
   MAX_OWN_TEXT_CHARS,
   MAX_OPTION_TEXT_CHARS,
-  comparableText,
   cssEscape,
   isDisplayed,
   isDisplayedPageElement,
@@ -301,13 +300,8 @@ export function headingTextFromRoot(root: Element | null | undefined, excludeEl:
 
 function findDialogTitle(el: Element) {
   const root = overlayRoot(el);
-  if (root) {
-    const fromHeading = headingTextFromRoot(root, el);
-    if (fromHeading) return fromHeading;
-    const named = namedOverlayTitle(root.textContent);
-    if (named) return named;
-  }
-  return '';
+  if (!root) return '';
+  return headingTextFromRoot(root, el) || namedOverlayTitle(root.textContent);
 }
 
 function findControlInCell(cell: Element, loc: StepLocator) {
