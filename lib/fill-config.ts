@@ -72,10 +72,7 @@ function workPatternFromText(text: string): WorkPattern {
 
 function workPatternById(patterns: WorkPattern[], patternId: string | null) {
   if (!patternId) return null;
-  for (const pattern of patterns) {
-    if (pattern.id === patternId) return pattern;
-  }
-  return null;
+  return patterns.find((pattern) => pattern.id === patternId) || null;
 }
 
 function workPatternTextById(patterns: WorkPattern[], patternId: string | null) {
@@ -154,9 +151,7 @@ function workTimeFromAttendance(clockIn: unknown, clockOut: unknown, breakTime: 
 }
 
 function templateLabel(template?: Partial<FillTemplate> | null) {
-  const name = String((template && template.name) || '').trim();
-  if (name) return name;
-  return String((template && template.workContent) || '').trim();
+  return String(template?.name || '').trim() || String(template?.workContent || '').trim();
 }
 
 function templateSlotValue(template: Partial<FillTemplate> | null | undefined, slotIndex: number) {
@@ -178,7 +173,7 @@ function templateFromItemValues(workContent: string, values: string[]): FillTemp
 }
 
 function validateTemplateRequiredFields(template?: Partial<FillTemplate> | null) {
-  const workContentMissing = !String((template && template.workContent) || '').trim();
+  const workContentMissing = !String(template?.workContent || '').trim();
   const itemValueMissing = TEMPLATE_ITEM_SLOTS.some((_, slotIndex) => !String(templateSlotValue(template, slotIndex)).trim());
   if (workContentMissing || itemValueMissing) {
     return '名前以外の工数テンプレート項目はすべて入力してください。';
@@ -186,18 +181,9 @@ function validateTemplateRequiredFields(template?: Partial<FillTemplate> | null)
   return '';
 }
 
-function duplicateDisplayNames(templates: FillTemplate[]) {
-  const seen = new Set<string>();
-  const duplicates: string[] = [];
-  for (const template of templates) {
-    const label = templateLabel(template);
-    if (seen.has(label)) {
-      if (!duplicates.includes(label)) duplicates.push(label);
-    } else {
-      seen.add(label);
-    }
-  }
-  return duplicates;
+function hasDuplicateDisplayName(templates: FillTemplate[]) {
+  const labels = templates.map(templateLabel);
+  return new Set(labels).size !== labels.length;
 }
 
 function validateTemplates(templates: unknown) {
@@ -208,22 +194,20 @@ function validateTemplates(templates: unknown) {
     const requiredFieldsError = validateTemplateRequiredFields(template);
     if (requiredFieldsError) return requiredFieldsError;
   }
-  if (duplicateDisplayNames(templates).length) {
+  if (hasDuplicateDisplayName(templates)) {
     return '工数テンプレートの表示名が重複しています。';
   }
   return '';
 }
 
 function templatePreviewRows(template?: Partial<FillTemplate> | null) {
-  const source = template || {};
-  const rows = [{ label: '業務内容', value: source.workContent || '' }];
-  TEMPLATE_ITEM_SLOTS.forEach((slot, slotIndex) => {
-    rows.push({
+  return [
+    { label: '業務内容', value: template?.workContent || '' },
+    ...TEMPLATE_ITEM_SLOTS.map((slot, slotIndex) => ({
       label: slot.fieldName,
-      value: templateSlotValue(source, slotIndex)
-    });
-  });
-  return rows;
+      value: templateSlotValue(template, slotIndex)
+    }))
+  ];
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -232,15 +216,7 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 
 function defaultsFromRaw(raw: unknown): FillDefaults | null {
   if (!isPlainRecord(raw)) return null;
-  const defaults: FillDefaults = {
-    workPatternId: null,
-    clockIn: SEED_DEFAULTS.clockIn,
-    clockOut: SEED_DEFAULTS.clockOut,
-    breakTime: SEED_DEFAULTS.breakTime,
-    workLocation: SEED_DEFAULTS.workLocation,
-    stepByStep: SEED_DEFAULTS.stepByStep,
-    includeDayApply: SEED_DEFAULTS.includeDayApply
-  };
+  const defaults: FillDefaults = { ...SEED_DEFAULTS };
   if (typeof raw.workPatternId === 'string' && raw.workPatternId !== '') {
     defaults.workPatternId = raw.workPatternId;
   }
@@ -256,11 +232,9 @@ function defaultsFromRaw(raw: unknown): FillDefaults | null {
 
 function workPatternsFromRaw(raw: unknown): WorkPattern[] | null {
   if (!Array.isArray(raw)) return null;
-  const texts: string[] = [];
-  for (const entry of raw) {
-    if (isPlainRecord(entry) && typeof entry.text === 'string') texts.push(entry.text);
-  }
-  return workPatternsFromTexts(texts);
+  return workPatternsFromTexts(raw.flatMap((entry) =>
+    isPlainRecord(entry) && typeof entry.text === 'string' ? [entry.text] : []
+  ));
 }
 
 function templateItemFromRaw(raw: unknown): FillTemplateItem | null {
@@ -283,38 +257,23 @@ function templateFromRaw(raw: unknown): FillTemplate | null {
   if (typeof raw.name !== 'string' || typeof raw.workContent !== 'string' || !Array.isArray(raw.items)) {
     return null;
   }
-  const items: FillTemplateItem[] = [];
-  for (const item of raw.items) {
-    const parsed = templateItemFromRaw(item);
-    if (!parsed) return null;
-    items.push(parsed);
-  }
+  const items = raw.items.map(templateItemFromRaw);
+  if (!items.every((item): item is FillTemplateItem => item !== null)) return null;
   return { name: raw.name, workContent: raw.workContent, items };
 }
 
 function templatesFromRaw(raw: unknown): FillTemplate[] | null {
   if (!Array.isArray(raw)) return null;
-  const templates: FillTemplate[] = [];
-  for (const entry of raw) {
-    const parsed = templateFromRaw(entry);
-    if (parsed) templates.push(parsed);
-  }
-  return templates;
+  return raw.map(templateFromRaw).filter((template): template is FillTemplate => template !== null);
 }
 
-async function loadFillSettings(): Promise<{
-  defaults: FillDefaults;
-  templates: FillTemplate[];
-  workPatterns: WorkPattern[];
-}> {
+async function loadFillSettings() {
   const data = await browser.storage.local.get([DEFAULTS_KEY, TEMPLATES_KEY, WORK_PATTERNS_KEY]);
-  const parsedDefaults = defaultsFromRaw(data[DEFAULTS_KEY]);
-  const parsedTemplates = templatesFromRaw(data[TEMPLATES_KEY]);
-  const parsedWorkPatterns = workPatternsFromRaw(data[WORK_PATTERNS_KEY]);
-  const defaults = parsedDefaults || Object.assign({}, SEED_DEFAULTS);
-  const templates = parsedTemplates || [];
-  const workPatterns = parsedWorkPatterns || [];
-  return { defaults, templates, workPatterns };
+  return {
+    defaults: defaultsFromRaw(data[DEFAULTS_KEY]) || { ...SEED_DEFAULTS },
+    templates: templatesFromRaw(data[TEMPLATES_KEY]) || [],
+    workPatterns: workPatternsFromRaw(data[WORK_PATTERNS_KEY]) || []
+  };
 }
 
 async function saveFillSettings(
@@ -322,42 +281,30 @@ async function saveFillSettings(
   templates: FillTemplate[],
   workPatterns: WorkPattern[]
 ) {
-  const nextDefaults = Object.assign({}, defaults);
-  nextDefaults.workPatternId = workPatternById(workPatterns, defaults.workPatternId)?.id ?? null;
   await browser.storage.local.set({
-    [DEFAULTS_KEY]: nextDefaults,
+    [DEFAULTS_KEY]: {
+      ...defaults,
+      workPatternId: workPatternById(workPatterns, defaults.workPatternId)?.id ?? null
+    },
     [TEMPLATES_KEY]: templates,
     [WORK_PATTERNS_KEY]: workPatterns
   });
 }
 
 async function saveWorkPatterns(workPatterns: WorkPattern[]) {
-  const data = await browser.storage.local.get([DEFAULTS_KEY, TEMPLATES_KEY]);
-  const defaults = defaultsFromRaw(data[DEFAULTS_KEY]) || Object.assign({}, SEED_DEFAULTS);
-  const templates = templatesFromRaw(data[TEMPLATES_KEY]) || [];
+  const { defaults, templates } = await loadFillSettings();
   await saveFillSettings(defaults, templates, workPatterns);
 }
 
 async function appendFillTemplate(template: FillTemplate) {
   const { defaults, templates, workPatterns } = await loadFillSettings();
-  const named = {
-    name: template.name,
-    workContent: template.workContent,
-    items: template.items.map((item) => Object.assign({}, item))
-  };
-  const existingLabels = templates.map(templateLabel);
+  const named = { ...template, items: template.items.map((item) => ({ ...item })) };
+  const takenLabels = new Set(templates.map(templateLabel));
   const label = templateLabel(named);
-  if (label && existingLabels.includes(label)) {
-    const takenLabels = new Set(existingLabels);
+  if (label && takenLabels.has(label)) {
     let serial = 1;
-    while (true) {
-      const uniqueName = `${label} (${serial})`.trim();
-      if (!takenLabels.has(uniqueName)) {
-        named.name = uniqueName;
-        break;
-      }
-      serial += 1;
-    }
+    while (takenLabels.has(`${label} (${serial})`)) serial += 1;
+    named.name = `${label} (${serial})`;
   }
   await saveFillSettings(defaults, templates.concat([named]), workPatterns);
   return named;
@@ -372,33 +319,22 @@ function parseNonNegativeMs(value: unknown) {
   return null;
 }
 
-function waitSettingsFromRaw(raw: object): FillWaitSettings {
-  const rawRecord = isPlainRecord(raw) ? raw : {};
-  const settings = {} as FillWaitSettings;
-  for (const fieldName of FILL_WAIT_FIELD_NAMES) {
+function waitSettingsFromRaw(raw: Record<string, unknown>): FillWaitSettings {
+  return Object.fromEntries(FILL_WAIT_FIELD_NAMES.map((fieldName) => {
     const field = FILL_WAIT_FIELDS[fieldName];
-    const parsed = parseNonNegativeMs(rawRecord[field.storageKey]);
-    settings[fieldName] = parsed ?? field.defaultValue;
-  }
-  return settings;
+    return [fieldName, parseNonNegativeMs(raw[field.storageKey]) ?? field.defaultValue];
+  })) as FillWaitSettings;
 }
 
 function waitSettingsToStorage(settings: FillWaitSettings): Record<string, number> {
-  const record: Record<string, number> = {};
-  for (const fieldName of FILL_WAIT_FIELD_NAMES) {
-    record[FILL_WAIT_FIELDS[fieldName].storageKey] = settings[fieldName];
-  }
-  return record;
+  return Object.fromEntries(FILL_WAIT_FIELD_NAMES.map((fieldName) =>
+    [FILL_WAIT_FIELDS[fieldName].storageKey, settings[fieldName]]
+  ));
 }
 
-async function loadWaitSettings(): Promise<FillWaitSettings> {
-  const storageDefaults: Record<string, number> = {};
-  for (const fieldName of FILL_WAIT_FIELD_NAMES) {
-    const field = FILL_WAIT_FIELDS[fieldName];
-    storageDefaults[field.storageKey] = field.defaultValue;
-  }
-  const stored = await browser.storage.local.get(storageDefaults);
-  return waitSettingsFromRaw(stored);
+async function loadWaitSettings() {
+  const storageKeys = FILL_WAIT_FIELD_NAMES.map((fieldName) => FILL_WAIT_FIELDS[fieldName].storageKey);
+  return waitSettingsFromRaw(await browser.storage.local.get(storageKeys));
 }
 
 async function saveWaitSettings(settings: FillWaitSettings) {
@@ -406,11 +342,7 @@ async function saveWaitSettings(settings: FillWaitSettings) {
 }
 
 function saveFillLogs(logs: unknown[]) {
-  const payload = logs.slice(-FILL_LOGS_MAX);
-  void browser.storage.local.set({ [FILL_LOGS_KEY]: payload }).then(
-    () => {},
-    () => {}
-  );
+  void browser.storage.local.set({ [FILL_LOGS_KEY]: logs.slice(-FILL_LOGS_MAX) }).catch(() => {});
 }
 
 function settingsFileRecord(
@@ -427,32 +359,18 @@ function settingsFileRecord(
   };
 }
 
+// ファイルに無い・不正な項目は null。
 function settingsFromFile(data: unknown) {
-  if (!isPlainRecord(data)) {
-    return {};
-  }
-  const imported: {
-    defaults?: FillDefaults;
-    templates?: FillTemplate[];
-    workPatterns?: WorkPattern[];
-    waitSettings?: FillWaitSettings;
-  } = {};
-  const parsedDefaults = defaultsFromRaw(data[DEFAULTS_KEY]);
-  if (parsedDefaults) imported.defaults = parsedDefaults;
-  const parsedTemplates = templatesFromRaw(data[TEMPLATES_KEY]);
-  if (parsedTemplates) imported.templates = parsedTemplates;
-  const parsedWorkPatterns = workPatternsFromRaw(data[WORK_PATTERNS_KEY]);
-  if (parsedWorkPatterns) imported.workPatterns = parsedWorkPatterns;
-  let fileHasWaitKey = false;
-  for (const fieldName of FILL_WAIT_FIELD_NAMES) {
-    if (Object.prototype.hasOwnProperty.call(data, FILL_WAIT_FIELDS[fieldName].storageKey)) {
-      fileHasWaitKey = true;
-    }
-  }
-  if (fileHasWaitKey) {
-    imported.waitSettings = waitSettingsFromRaw(data);
-  }
-  return imported;
+  const record: Record<string, unknown> = isPlainRecord(data) ? data : {};
+  const fileHasWaitKey = FILL_WAIT_FIELD_NAMES.some((fieldName) =>
+    Object.hasOwn(record, FILL_WAIT_FIELDS[fieldName].storageKey)
+  );
+  return {
+    defaults: defaultsFromRaw(record[DEFAULTS_KEY]),
+    templates: templatesFromRaw(record[TEMPLATES_KEY]),
+    workPatterns: workPatternsFromRaw(record[WORK_PATTERNS_KEY]),
+    waitSettings: fileHasWaitKey ? waitSettingsFromRaw(record) : null
+  };
 }
 
 export type {
@@ -481,6 +399,7 @@ export {
   saveFillSettings,
   appendFillTemplate,
   saveWorkPatterns,
+  FILL_WAIT_FIELD_NAMES,
   parseNonNegativeMs,
   loadWaitSettings,
   saveWaitSettings,
