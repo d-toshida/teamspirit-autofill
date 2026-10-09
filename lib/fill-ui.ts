@@ -19,6 +19,7 @@ import {
   type WorkPattern
 } from './fill-config.js';
 import {
+  populateTemplateSelect,
   populateWorkLocationSelect,
   populateWorkPatternSelect
 } from './fill-selects.js';
@@ -601,12 +602,7 @@ function showFillForm(defaults: FillDefaults, templates: FillTemplate[], workPat
 
   const templateSelect = document.createElement('select');
   templateSelect.id = 'ts-autofill-template';
-  templates.forEach((template, index) => {
-    const option = document.createElement('option');
-    option.value = String(index);
-    option.textContent = templateLabel(template);
-    templateSelect.appendChild(option);
-  });
+  populateTemplateSelect(templateSelect, templates);
   addField(body, '工数テンプレート', templateSelect);
 
   const templatePreview = document.createElement('div');

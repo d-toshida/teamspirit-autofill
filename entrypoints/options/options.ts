@@ -4,7 +4,6 @@ import {
   SEED_DEFAULTS,
   TEMPLATE_ITEM_SLOTS,
   digitsTime,
-  templateLabel,
   templateFromItemValues,
   templateSlotValue,
   validateTemplates,
@@ -20,6 +19,7 @@ import {
   type WorkPattern
 } from '../../lib/fill-config.js';
 import {
+  populateTemplateSelect,
   populateWorkHourGradeSelect,
   populateWorkLocationSelect,
   populateWorkPatternSelect
@@ -119,13 +119,7 @@ function commitSelectedTemplateFromForm() {
 }
 
 function renderTemplateList() {
-  templateListEl.innerHTML = '';
-  loadedTemplates.forEach((template, index) => {
-    const option = document.createElement('option');
-    option.value = String(index);
-    option.textContent = templateLabel(template);
-    templateListEl.appendChild(option);
-  });
+  populateTemplateSelect(templateListEl, loadedTemplates);
   if (selectedTemplateIndex >= loadedTemplates.length) {
     selectedTemplateIndex = Math.max(0, loadedTemplates.length - 1);
   }

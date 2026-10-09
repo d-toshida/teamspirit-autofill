@@ -3,8 +3,10 @@
 import {
   WORK_HOUR_GRADE_OPTIONS,
   WORK_LOCATION_OPTIONS,
+  templateLabel,
   workHourGradeOrEmpty,
   workPatternById,
+  type FillTemplate,
   type WorkPattern
 } from './fill-config.js';
 
@@ -41,6 +43,13 @@ export function populateWorkLocationSelect(selectEl: HTMLSelectElement, selected
     appendOption(selectEl, location, location);
   }
   selectEl.value = selectedValue;
+}
+
+export function populateTemplateSelect(selectEl: HTMLSelectElement, templates: FillTemplate[]) {
+  selectEl.replaceChildren();
+  templates.forEach((template, index) => {
+    appendOption(selectEl, String(index), templateLabel(template));
+  });
 }
 
 export function populateWorkHourGradeSelect(selectEl: HTMLSelectElement, selectedValue: unknown) {
