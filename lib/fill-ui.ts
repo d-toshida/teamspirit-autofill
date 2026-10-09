@@ -33,8 +33,7 @@ import {
   runCurrentFillStep,
   skipCurrentFillStep,
   type FillLogEntry,
-  type FillRunUi,
-  type UiState
+  type FillRunUi
 } from './fill-runner.js';
 import {
   CHOICE_SELECTOR,
@@ -51,6 +50,7 @@ import {
   isTimesheetValueTrigger,
   openWorkPatternCombobox,
   readWorkPatternOptionTexts,
+  tagWithRole,
   workTimeChangeDialog,
   workTimeChangeRemarkRow,
   type ExistingRowValue
@@ -62,6 +62,7 @@ import {
   normalizeSpace,
   ownVisibleText,
   queryAllDeep,
+  shortText,
   visibleElementText,
   visibleTextEquals
 } from './dom.js';
@@ -96,13 +97,13 @@ let lastWorkHourRowHeader = '';
 
 function elementLabel(el: Element | null) {
   if (!el || el === document.body || el === document.documentElement) return '';
-  const text = normalizeSpace(visibleElementText(el)).slice(0, 80);
+  const text = shortText(visibleElementText(el), 80);
   const extras = [];
   const expanded = el.getAttribute('aria-expanded');
   if (expanded !== null) extras.push(`expanded=${expanded}`);
   const haspopup = el.getAttribute('aria-haspopup');
   if (haspopup) extras.push(`haspopup=${haspopup}`);
-  return `${el.tagName.toLowerCase()}${el.getAttribute('role') ? '[role=' + el.getAttribute('role') + ']' : ''}${text ? ' ' + text : ''}${extras.length ? ' ' + extras.join(' ') : ''}`;
+  return `${tagWithRole(el)}${text ? ' ' + text : ''}${extras.length ? ' ' + extras.join(' ') : ''}`;
 }
 
 function overlayTitleOf(root: Element) {
@@ -113,7 +114,7 @@ function listedTexts(nodes: Iterable<Element>, maxItems: number) {
   const texts: string[] = [];
   for (const node of nodes) {
     if (!isDisplayedPageElement(node)) continue;
-    const text = normalizeSpace(ownVisibleText(node, 80) || '').slice(0, 80);
+    const text = ownVisibleText(node, 80);
     if (text && !texts.includes(text)) texts.push(text);
     if (texts.length >= maxItems) break;
   }
@@ -131,11 +132,13 @@ function targetMatchSnapshot(targetText?: string) {
     displayed: isDisplayed(el),
     timesheetTrigger: isTimesheetValueTrigger(el),
     inOpenList: isInsideOpenChoiceList(el),
-    text: normalizeSpace(visibleElementText(el)).slice(0, 80)
+    text: shortText(visibleElementText(el), 80)
   }));
 }
 
-function captureUiState(targetText?: string): UiState {
+export type UiState = ReturnType<typeof captureUiState>;
+
+function captureUiState(targetText?: string) {
   const overlays = overlayRoots().map((root) => ({
     title: overlayTitleOf(root),
     buttons: listedTexts(root.querySelectorAll('button'), 12),
@@ -161,8 +164,8 @@ function captureUiState(targetText?: string): UiState {
     .filter(isDisplayedPageElement)
     .slice(0, 8)
     .map((el) => ({
-      ariaLabel: normalizeSpace(el.getAttribute('aria-label') || '').slice(0, 40),
-      text: normalizeSpace(el.textContent).slice(0, 80),
+      ariaLabel: shortText(el.getAttribute('aria-label'), 40),
+      text: shortText(el.textContent, 80),
       value: comboboxValue(el).slice(0, 80),
       expanded: isComboboxOpen(el)
     }));

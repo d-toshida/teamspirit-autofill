@@ -12,6 +12,7 @@ import {
   normalizeSpace,
   ownVisibleText,
   queryAllDeep,
+  shortText,
   visibleElementText,
   visibleTextEquals
 } from './dom.js';
@@ -226,6 +227,11 @@ export function clickChoiceByText(text: string, rootDocument?: Document | null) 
   return activateClick(findChoiceByText(text, rootDocument));
 }
 
+export function tagWithRole(el: Element) {
+  const role = el.getAttribute('role');
+  return `${el.tagName.toLowerCase()}${role ? `[role=${role}]` : ''}`;
+}
+
 function summarizeChoiceMiss(text: string) {
   const wanted = comparableText(text);
   const nodes = queryAllDeep(CHOICE_SELECTOR + ', span, option');
@@ -246,7 +252,7 @@ function summarizeChoiceMiss(text: string) {
     if (openList) inOpenList += 1;
     if (rows.length < 8) {
       rows.push(
-        `  ${el.tagName.toLowerCase()}${el.getAttribute('role') ? '[role=' + el.getAttribute('role') + ']' : ''} displayed=${isDisplayed(el)} trigger=${trigger} openList=${openList} ${normalizeSpace(visibleElementText(el)).slice(0, 40)}`
+        `  ${tagWithRole(el)} displayed=${isDisplayed(el)} trigger=${trigger} openList=${openList} ${shortText(visibleElementText(el), 40)}`
       );
     }
   }
@@ -280,9 +286,8 @@ export function describeFailureProbe(targetText?: string) {
   const visibleOptions = optionNodes.filter(isDisplayedPageElement);
   lines.push(`role=option: 表示${visibleOptions.length} / 全体${optionNodes.length}`);
   for (const el of optionNodes.slice(0, 8)) {
-    const text = normalizeSpace(visibleElementText(el)).slice(0, 40);
     lines.push(
-      `  ${el.tagName.toLowerCase()} displayed=${isDisplayed(el)} openList=${isInsideOpenChoiceList(el)} ${text}`
+      `  ${el.tagName.toLowerCase()} displayed=${isDisplayed(el)} openList=${isInsideOpenChoiceList(el)} ${shortText(visibleElementText(el), 40)}`
     );
   }
   const selectSummaries = displayedSelectSummaries();

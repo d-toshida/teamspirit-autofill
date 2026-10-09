@@ -15,59 +15,9 @@ import {
   type FillManualGroup,
   type FillStepSession
 } from './fill-steps.js';
+import type { UiState } from './fill-ui.js';
 
 export type FillPhase = 'idle' | 'form' | 'overwrite' | 'steps';
-
-export type ChoiceMatchSnapshot = {
-  tag: string;
-  role: string;
-  displayed: boolean;
-  timesheetTrigger: boolean;
-  inOpenList: boolean;
-  text: string;
-};
-
-export type OverlaySnapshot = {
-  title: string;
-  buttons: string[];
-  choices: string[];
-};
-
-export type OpenMenuSnapshot = {
-  tag: string;
-  className: string;
-  items: string[];
-};
-
-export type OptionsSnapshot = {
-  total: number;
-  visible: number;
-  texts: string[];
-};
-
-export type ComboboxSnapshot = {
-  ariaLabel: string;
-  text: string;
-  value: string;
-  expanded: boolean;
-};
-
-export type UiState = {
-  pathname: string;
-  isIframe: boolean;
-  focused: string;
-  overlayCount: number;
-  overlays: OverlaySnapshot[];
-  openMenus: OpenMenuSnapshot[];
-  options: OptionsSnapshot;
-  selects: string[];
-  comboboxes: ComboboxSnapshot[];
-  timeInputs: string[];
-  targetText: string;
-  matchCount: number;
-  visibleMatchCount: number;
-  matches: ChoiceMatchSnapshot[];
-};
 
 export type FillLogEntry = {
   at: number;
