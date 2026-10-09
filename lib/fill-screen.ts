@@ -150,14 +150,9 @@ export async function waitUntilReturnedToTimesheet(
   );
 }
 
-function runLocatedOperation(action: ElementAction, loc: StepLocator, value?: unknown) {
-  const found = findElement(loc);
-  if (!found) return { ok: false, found: null };
-  return { ok: applyElementOperation(found, action, value).ok, found };
-}
-
 export function runOperation(action: ElementAction, loc: StepLocator, value?: unknown) {
-  return runLocatedOperation(action, loc, value).ok;
+  const found = findElement(loc);
+  return !!found && applyElementOperation(found, action, value);
 }
 
 export function clickByText(selector: string, text: string, dialogTitle?: string) {

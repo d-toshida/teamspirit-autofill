@@ -9,6 +9,8 @@ export type ElementAction = 'click' | 'set';
 
 type ToastElement = HTMLElement & { _timer?: ReturnType<typeof setTimeout> };
 
+const BUBBLING_EVENT = { bubbles: true, composed: true };
+
 // 勤務パターン欄は combobox 本体ではなく内側の input/button をクリックする。
 function innermostClickable(el: Element | null | undefined) {
   if (!el) return null;
@@ -16,6 +18,22 @@ function innermostClickable(el: Element | null | undefined) {
   if (el.matches('a, button, [role="menuitem"], [role="option"], [role="button"]')) return el;
   const inner = el.querySelector('a, button, [role="menuitem"], [role="option"], [role="button"]');
   return inner || el;
+}
+
+function scrollAndFocus(el: HTMLElement) {
+  el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  try {
+    el.focus({ preventScroll: true });
+  } catch (e) {
+    try { el.focus(); } catch (ignored) { /* フォーカスできない要素は無視 */ }
+  }
+}
+
+function assignNativeValue(el: Element, value: unknown) {
+  const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype
+    : el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
+    : HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, value);
 }
 
 export function activateClick(el: Element | null | undefined) {
@@ -27,14 +45,7 @@ export function activateClick(el: Element | null | undefined) {
     return true;
   }
   const target = innermostClickable(el) as HTMLElement;
-  if (typeof target.scrollIntoView === 'function') {
-    target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }
-  try {
-    if (typeof target.focus === 'function') target.focus({ preventScroll: true });
-  } catch (e) {
-    try { target.focus(); } catch (ignored) { /* フォーカスできない要素は無視 */ }
-  }
+  scrollAndFocus(target);
   const mouse = { bubbles: true, cancelable: true, composed: true, view: window, buttons: 1 };
   try {
     target.dispatchEvent(new PointerEvent('pointerdown', mouse));
@@ -49,44 +60,30 @@ export function activateClick(el: Element | null | undefined) {
 }
 
 export function setNativeValue(el: Element, value: unknown) {
-  const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype
-    : el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
-    : HTMLInputElement.prototype;
-  const setter = Object.getOwnPropertyDescriptor(proto, 'value')!.set!;
-  setter.call(el, value);
-  el.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
-  el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+  assignNativeValue(el, value);
+  el.dispatchEvent(new Event('input', BUBBLING_EVENT));
+  el.dispatchEvent(new Event('change', BUBBLING_EVENT));
 }
 
 // フォーカスイン → 入力 → blur で画面側の時刻整形を発火する。
 // 欄からフォーカスが外れると `09:30` のように整形される。この整形の前に保存すると反映されない。
 export function commitTextField(el: Element, value: unknown) {
   const field = el as HTMLInputElement;
-  if (typeof field.scrollIntoView === 'function') {
-    field.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }
-  try {
-    field.focus({ preventScroll: true });
-  } catch (e) {
-    try { field.focus(); } catch (ignored) { /* フォーカスできない入力は値設定だけ行う */ }
-  }
+  scrollAndFocus(field);
   if (typeof field.select === 'function') {
     try { field.select(); } catch (e) { /* 全選択できない入力は上書きのみ */ }
   }
-  const proto = field.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-  const setter = Object.getOwnPropertyDescriptor(proto, 'value')!.set!;
-  setter.call(field, value);
-  field.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+  assignNativeValue(field, value);
+  field.dispatchEvent(new Event('input', BUBBLING_EVENT));
   try {
     field.dispatchEvent(new InputEvent('input', {
-      bubbles: true,
-      composed: true,
+      ...BUBBLING_EVENT,
       inputType: 'insertReplacementText',
       data: String(value)
     }));
   } catch (e) { /* InputEvent を送れない環境は input のみ */ }
   field.blur();
-  field.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+  field.dispatchEvent(new Event('change', BUBBLING_EVENT));
 }
 
 export function applyElementOperation(el: Element, action: ElementAction, value?: unknown) {
@@ -95,9 +92,9 @@ export function applyElementOperation(el: Element, action: ElementAction, value?
       if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') commitTextField(el, value);
       else setNativeValue(el, value);
     } else if (action === 'click') activateClick(el);
-    return { ok: true };
+    return true;
   } catch (e) {
-    return { ok: false, error: (e as { message?: string }).message };
+    return false;
   }
 }
 
