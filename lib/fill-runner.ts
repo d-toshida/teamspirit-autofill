@@ -133,14 +133,14 @@ export type FillRunUi = {
 
 export const fillSession: FillSession = idleFillSession(0);
 
-export function currentManualGroup() {
+function currentManualGroup() {
   const autoIndex = fillSession.stepIndex;
   return fillSession.manualGroups.find((group) =>
     autoIndex >= group.autoStart && autoIndex < group.autoEnd
   ) || null;
 }
 
-export function autoProgressText(group: FillManualGroup) {
+function autoProgressText(group: FillManualGroup) {
   const autoTotal = fillSession.steps.length;
   const autoStartDisplay = fillSession.stepIndex + 1;
   const autoEndDisplay = group.autoEnd;
@@ -153,8 +153,6 @@ export function clearFillSession() {
 }
 
 export function currentStepStatusText() {
-  const autoTotal = fillSession.steps.length;
-  if (fillSession.stepIndex >= autoTotal) return 'この行の入力が完了しました。';
   const group = currentManualGroup();
   if (!group) return 'この行の入力が完了しました。';
   const manualIndex = fillSession.manualGroups.indexOf(group);
@@ -176,21 +174,25 @@ function finishFillIfComplete(ui: FillRunUi) {
   return true;
 }
 
+type StepOutcome = Omit<FillLogEntry, 'at' | 'rowHeader' | 'step' | 'total' | 'label' | 'targetText'>;
+
+function appendCurrentStepLog(step: FillAutoStep, outcome: StepOutcome, ui: FillRunUi) {
+  ui.appendFillLog({
+    at: Date.now(),
+    rowHeader: fillSession.rowHeader,
+    step: fillSession.stepIndex + 1,
+    total: fillSession.steps.length,
+    label: step.label,
+    targetText: step.targetText || '',
+    ...outcome
+  });
+}
+
 function skipAutoStepsUntil(autoEndExclusive: number, reason: string, ui: FillRunUi) {
-  if (fillSession.stepIndex >= fillSession.steps.length) {
-    finishFillIfComplete(ui);
-    return;
-  }
   while (fillSession.stepIndex < autoEndExclusive && fillSession.stepIndex < fillSession.steps.length) {
     const step = fillSession.steps[fillSession.stepIndex]!;
     const snapshot = ui.captureUiState(step.targetText);
-    ui.appendFillLog({
-      at: Date.now(),
-      rowHeader: fillSession.rowHeader,
-      step: fillSession.stepIndex + 1,
-      total: fillSession.steps.length,
-      label: step.label,
-      targetText: step.targetText || '',
+    appendCurrentStepLog(step, {
       ok: true,
       skipped: true,
       skipReason: reason,
@@ -198,7 +200,7 @@ function skipAutoStepsUntil(autoEndExclusive: number, reason: string, ui: FillRu
       errorMessage: '',
       before: snapshot,
       after: snapshot
-    });
+    }, ui);
     fillSession.stepIndex += 1;
   }
   finishFillIfComplete(ui);
@@ -220,10 +222,6 @@ async function runCurrentAutoStep(
   runGeneration: number,
   ui: FillRunUi
 ) {
-  if (fillSession.stepIndex >= fillSession.steps.length) {
-    finishFillIfComplete(ui);
-    return 'complete';
-  }
   const step = fillSession.steps[fillSession.stepIndex]!;
   const finishIfLoadWaitEnded = (
     waitResult: 'cancelled' | 'ok' | 'timeout',
@@ -275,9 +273,7 @@ async function runCurrentAutoStep(
   try {
     ok = !!(await step.run());
   } catch (caught) {
-    ok = false;
-    const caughtMessage = (caught as { message?: string } | null | undefined)?.message;
-    error = caught && caughtMessage ? caughtMessage : String(caught);
+    error = (caught as { message?: string } | null | undefined)?.message || String(caught);
   }
   const after = ui.captureUiState(step.targetText);
   return completeAutoStep(step, ok, error, before, after, ui);
@@ -297,20 +293,7 @@ function completeAutoStep(
   const probe = !ok
     ? [fillSession.lastProbe, describeFailureProbe(step.targetText)].filter(Boolean).join('\n')
     : fillSession.lastProbe;
-  ui.appendFillLog({
-    at: Date.now(),
-    rowHeader: fillSession.rowHeader,
-    step: fillSession.stepIndex + 1,
-    total: fillSession.steps.length,
-    label: step.label,
-    targetText: step.targetText || '',
-    ok,
-    error,
-    errorMessage,
-    probe,
-    before,
-    after
-  });
+  appendCurrentStepLog(step, { ok, error, errorMessage, probe, before, after }, ui);
   if (!ok) {
     ui.notify(errorMessage);
     ui.showFillEnded(errorMessage, true);
