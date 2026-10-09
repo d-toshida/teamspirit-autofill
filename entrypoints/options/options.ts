@@ -1,7 +1,7 @@
 // options.ts - 既定値・工数テンプレートと、設定の共有
 
 import {
-  SEED_DEFAULTS,
+  FILL_WAIT_FIELD_NAMES,
   TEMPLATE_ITEM_SLOTS,
   digitsTime,
   templateFromItemValues,
@@ -16,6 +16,7 @@ import {
   settingsFromFile,
   type FillDefaults,
   type FillTemplate,
+  type FillWaitSettings,
   type WorkPattern
 } from '../../lib/fill-config.js';
 import {
@@ -26,12 +27,16 @@ import {
 } from '../../lib/fill-selects.js';
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 const fillSaveStatus = document.getElementById('fillSaveStatus') as HTMLElement;
-const autoStepDelayMsEl = document.getElementById('autoStepDelayMs') as HTMLInputElement;
-const loadWaitIntervalMsEl = document.getElementById('loadWaitIntervalMs') as HTMLInputElement;
-const loadWaitTimeoutMsEl = document.getElementById('loadWaitTimeoutMs') as HTMLInputElement;
 const templateListEl = document.getElementById('templateList') as HTMLSelectElement;
 const templateDeleteEl = document.getElementById('templateDelete') as HTMLButtonElement;
 const workPatternDefaultEl = document.getElementById('workPatternDefault') as HTMLSelectElement;
+
+// 待ち時間の入力欄 id は FillWaitSettings のキー名と同じ。
+const WAIT_FIELD_ERROR_MESSAGES: Record<keyof FillWaitSettings, string> = {
+  autoStepDelayMs: '自動ステップ間の待ちは0以上の整数（ミリ秒）で入力してください。',
+  loadWaitIntervalMs: 'ロード待ちの間隔は0以上の整数（ミリ秒）で入力してください。',
+  loadWaitTimeoutMs: 'ロード待ちのタイムアウトは0以上の整数（ミリ秒）で入力してください。'
+};
 
 let loadedTemplates: FillTemplate[] = [];
 let selectedTemplateIndex = 0;
@@ -43,10 +48,6 @@ function inputEl(id: string) {
 
 function selectEl(id: string) {
   return document.getElementById(id) as HTMLSelectElement;
-}
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
 }
 
 const TEMPLATE_EDITOR_IDS = [
@@ -67,13 +68,12 @@ function templateFromForm(): FillTemplate {
 }
 
 function syncTemplateNamePlaceholder() {
-  const nameInput = inputEl('templateName');
-  nameInput.placeholder = inputEl('templateWorkContent').value.trim();
+  inputEl('templateName').placeholder = inputEl('templateWorkContent').value.trim();
 }
 
 function populateTemplateForm(template: FillTemplate | undefined) {
-  inputEl('templateName').value = (template && template.name) || '';
-  inputEl('templateWorkContent').value = (template && template.workContent) || '';
+  inputEl('templateName').value = template?.name || '';
+  inputEl('templateWorkContent').value = template?.workContent || '';
   TEMPLATE_ITEM_SLOTS.forEach((slot, slotIndex) => {
     const value = templateSlotValue(template, slotIndex);
     const el = document.getElementById(slot.optionsFieldId);
@@ -98,19 +98,13 @@ function defaultsFromForm(): FillDefaults {
   };
 }
 
-function populateDefaultsForm(defaults: FillDefaults | undefined) {
-  const source = defaults || SEED_DEFAULTS;
-  inputEl('clockIn').value = source.clockIn || '';
-  inputEl('clockOut').value = source.clockOut || '';
-  inputEl('breakTime').value = source.breakTime || '';
-  populateWorkLocationSelect(selectEl('workLocation'), source.workLocation);
-  inputEl('stepByStep').checked = source.stepByStep;
-  inputEl('includeDayApply').checked = source.includeDayApply;
-}
-
-function populateWorkPatternsForm(patterns: WorkPattern[], defaultId: string | null) {
-  loadedWorkPatterns = patterns.slice();
-  populateWorkPatternSelect(workPatternDefaultEl, loadedWorkPatterns, defaultId);
+function populateDefaultsForm(defaults: FillDefaults) {
+  inputEl('clockIn').value = defaults.clockIn;
+  inputEl('clockOut').value = defaults.clockOut;
+  inputEl('breakTime').value = defaults.breakTime;
+  populateWorkLocationSelect(selectEl('workLocation'), defaults.workLocation);
+  inputEl('stepByStep').checked = defaults.stepByStep;
+  inputEl('includeDayApply').checked = defaults.includeDayApply;
 }
 
 function commitSelectedTemplateFromForm() {
@@ -140,18 +134,18 @@ function showSelectedTemplate() {
 async function loadFillForms() {
   const { defaults, templates, workPatterns } = await loadFillSettings();
   populateDefaultsForm(defaults);
-  populateWorkPatternsForm(workPatterns, defaults.workPatternId);
-  loadedTemplates = templates.slice();
+  loadedWorkPatterns = workPatterns;
+  populateWorkPatternSelect(workPatternDefaultEl, workPatterns, defaults.workPatternId);
+  loadedTemplates = templates;
   selectedTemplateIndex = 0;
   showSelectedTemplate();
-  return loadedTemplates;
 }
 
 async function loadOtherSettingsForm() {
   const waitSettings = await loadWaitSettings();
-  autoStepDelayMsEl.value = String(waitSettings.autoStepDelayMs);
-  loadWaitIntervalMsEl.value = String(waitSettings.loadWaitIntervalMs);
-  loadWaitTimeoutMsEl.value = String(waitSettings.loadWaitTimeoutMs);
+  for (const fieldName of FILL_WAIT_FIELD_NAMES) {
+    inputEl(fieldName).value = String(waitSettings[fieldName]);
+  }
 }
 
 document.getElementById('saveFill')!.addEventListener('click', async () => {
@@ -162,33 +156,22 @@ document.getElementById('saveFill')!.addEventListener('click', async () => {
     fillSaveStatus.textContent = validationError;
     return;
   }
-  const autoStepDelayMs = parseNonNegativeMs(autoStepDelayMsEl.value);
-  if (autoStepDelayMs === null) {
-    fillSaveStatus.textContent = '自動ステップ間の待ちは0以上の整数（ミリ秒）で入力してください。';
-    return;
+  const waitSettings = {} as FillWaitSettings;
+  for (const fieldName of FILL_WAIT_FIELD_NAMES) {
+    const parsedMs = parseNonNegativeMs(inputEl(fieldName).value);
+    if (parsedMs === null) {
+      fillSaveStatus.textContent = WAIT_FIELD_ERROR_MESSAGES[fieldName];
+      return;
+    }
+    waitSettings[fieldName] = parsedMs;
   }
-  const loadWaitIntervalMs = parseNonNegativeMs(loadWaitIntervalMsEl.value);
-  if (loadWaitIntervalMs === null) {
-    fillSaveStatus.textContent = 'ロード待ちの間隔は0以上の整数（ミリ秒）で入力してください。';
-    return;
-  }
-  const loadWaitTimeoutMs = parseNonNegativeMs(loadWaitTimeoutMsEl.value);
-  if (loadWaitTimeoutMs === null) {
-    fillSaveStatus.textContent = 'ロード待ちのタイムアウトは0以上の整数（ミリ秒）で入力してください。';
-    return;
-  }
-  const defaults = defaultsFromForm();
-  const nextTemplates = loadedTemplates.slice();
-  const nextWorkPatterns = loadedWorkPatterns.slice();
-  await saveFillSettings(defaults, nextTemplates, nextWorkPatterns);
-  await saveWaitSettings({ autoStepDelayMs, loadWaitIntervalMs, loadWaitTimeoutMs });
-  loadedTemplates = nextTemplates;
-  loadedWorkPatterns = nextWorkPatterns;
+  await saveFillSettings(defaultsFromForm(), loadedTemplates, loadedWorkPatterns);
+  await saveWaitSettings(waitSettings);
   await loadOtherSettingsForm();
   fillSaveStatus.textContent = '設定を保存しました。';
 });
 
-document.getElementById('templateDelete')!.addEventListener('click', () => {
+templateDeleteEl.addEventListener('click', () => {
   if (loadedTemplates.length <= 1) return;
   loadedTemplates.splice(selectedTemplateIndex, 1);
   if (selectedTemplateIndex >= loadedTemplates.length) {
@@ -230,54 +213,46 @@ fileInput.addEventListener('change', () => {
   const reader = new FileReader();
   reader.onload = async () => {
     try {
-      const data = JSON.parse(String(reader.result));
-      const imported = settingsFromFile(data);
-      if (imported.templates) {
-        const validationError = validateTemplates(imported.templates);
-        if (validationError) {
-          alert(validationError);
-          fileInput.value = '';
-          return;
-        }
+      const imported = settingsFromFile(JSON.parse(String(reader.result)));
+      if (!imported.defaults && !imported.templates && !imported.workPatterns && !imported.waitSettings) {
+        alert('ファイルの形式が正しくありません。');
+        return;
+      }
+      const validationError = imported.templates ? validateTemplates(imported.templates) : '';
+      if (validationError) {
+        alert(validationError);
+        return;
       }
       if (imported.defaults || imported.templates || imported.workPatterns) {
         const current = await loadFillSettings();
-        const nextWorkPatterns = imported.workPatterns || current.workPatterns;
         await saveFillSettings(
           imported.defaults || current.defaults,
           imported.templates || current.templates,
-          nextWorkPatterns
+          imported.workPatterns || current.workPatterns
         );
       }
       if (imported.waitSettings) {
         await saveWaitSettings(imported.waitSettings);
       }
-      if (!imported.defaults && !imported.templates && !imported.workPatterns && !imported.waitSettings) {
-        alert('ファイルの形式が正しくありません。');
-        fileInput.value = '';
-        return;
-      }
       await loadFillForms();
       await loadOtherSettingsForm();
       alert('インポートして保存しました。');
     } catch (e) {
-      alert('ファイルの形式が正しくありません：' + errorMessage(e));
+      alert('ファイルの形式が正しくありません：' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      fileInput.value = '';
     }
-    fileInput.value = '';
   };
   reader.readAsText(file);
 });
 
-inputEl('templateName').addEventListener('input', () => {
-  commitSelectedTemplateFromForm();
-  renderTemplateList();
-});
-
-inputEl('templateWorkContent').addEventListener('input', () => {
-  syncTemplateNamePlaceholder();
-  commitSelectedTemplateFromForm();
-  renderTemplateList();
-});
+for (const id of ['templateName', 'templateWorkContent']) {
+  inputEl(id).addEventListener('input', () => {
+    syncTemplateNamePlaceholder();
+    commitSelectedTemplateFromForm();
+    renderTemplateList();
+  });
+}
 
 void loadFillForms();
 void loadOtherSettingsForm();
