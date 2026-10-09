@@ -1,4 +1,5 @@
 import { defineConfig } from 'wxt';
+import { TEAMSPIRIT_HOST_MATCHES } from './lib/hosts.js';
 
 export default defineConfig({
   imports: false,
@@ -17,17 +18,6 @@ export default defineConfig({
       default_title: 'TeamSpirit 自動入力',
     },
     permissions: ['storage', 'scripting'],
-    host_permissions: [
-      'https://*.teamspirit.co.jp/*',
-      'https://*.teamspirit.com/*',
-      'https://*.force.com/*',
-      'https://*.lightning.force.com/*',
-      'https://*.visual.force.com/*',
-      'https://*.visualforce.com/*',
-      'https://*.salesforce.com/*',
-      'https://*.my.salesforce.com/*',
-      'https://*.my.site.com/*',
-      'https://*.cloudforce.com/*',
-    ],
+    host_permissions: TEAMSPIRIT_HOST_MATCHES,
   },
 });
