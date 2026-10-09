@@ -56,6 +56,7 @@ export const OPEN_MENU_SELECTOR = '[role="menu"], [role="listbox"], .slds-dropdo
 export const WORK_HOUR_EXTENDED_ITEM_SELECTOR = '.task__extended__item-list__item';
 
 const DISPLAYED_SELECT_SUMMARY_MAX = 4;
+const UNSET_VALUE_TEXT = /^(選択|未入力|--|－)/;
 const FAVORITE_SEARCH_RESULT_ROW_SELECTOR = '[data-testid^="favorite-search-result-row-"]';
 const FAVORITE_SEARCH_RESULT_LABEL_SELECTOR = '.favorite-search-result-table-row-hierarchyOption-label';
 const WORK_HOUR_JOB_ROW_SELECTOR = '[data-rbd-draggable-id]';
@@ -71,9 +72,7 @@ const WORK_TIME_CHANGE_FORM_ROW_LABEL_SELECTOR = '.timesheet-pc-dialogs-daily-at
 const WORK_TIME_CHANGE_APPLY_BUTTON_SELECTOR = '.timesheet-pc-dialogs-daily-att-request-dialog-form-frame__button';
 
 export function waitMs(durationMs: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, durationMs);
-  });
+  return new Promise((resolve) => setTimeout(resolve, durationMs));
 }
 
 export async function waitUntilReady(
@@ -307,19 +306,12 @@ function otherSameOriginDocuments() {
 }
 
 export function choiceIsDisplayed(text: string) {
-  if (findChoiceByText(text)) return true;
-  for (const doc of otherSameOriginDocuments()) {
-    if (findChoiceByText(text, doc)) return true;
-  }
-  return false;
+  return [document, ...otherSameOriginDocuments()].some((doc) => findChoiceByText(text, doc));
 }
 
 // 同一オリジンの親 document と全フレームへ探す。候補探索は queryAllDeep で open shadow も見る。
 export async function clickChoiceEverywhere(text: string) {
-  if (clickChoiceByText(text)) return true;
-  for (const doc of otherSameOriginDocuments()) {
-    if (clickChoiceByText(text, doc)) return true;
-  }
+  if ([document, ...otherSameOriginDocuments()].some((doc) => clickChoiceByText(text, doc))) return true;
   const response = await sendMessage('clickChoiceByText', text).catch(() => null);
   return !!(response && response.ok);
 }
@@ -537,7 +529,7 @@ function looksFilled(header: string, text: string) {
   const value = normalizeSpace(text);
   if (!value || value === header) return false;
   if (header === '出勤' || header === '退勤') return /\d/.test(value);
-  return value.length > 0 && !/^(選択|未入力|--|－)/.test(value);
+  return !UNSET_VALUE_TEXT.test(value);
 }
 
 export function existingRowValues(row: HTMLTableRowElement, table: HTMLTableElement) {
@@ -552,8 +544,7 @@ export function existingRowValues(row: HTMLTableRowElement, table: HTMLTableElem
 function workPatternValuesMatch(onScreen: string, wanted: string) {
   const screenCmp = comparableText(onScreen);
   const wantedCmp = comparableText(wanted);
-  if (!wantedCmp) return false;
-  if (!screenCmp) return false;
+  if (!wantedCmp || !screenCmp) return false;
   if (screenCmp === wantedCmp || screenCmp.includes(wantedCmp) || wantedCmp.includes(screenCmp)) return true;
   const patternId = wanted.match(/WPC-\d+/);
   return !!(patternId && screenCmp.includes(patternId[0]));
@@ -605,15 +596,10 @@ function workPatternOptionNodes() {
 }
 
 export function readWorkPatternOptionTexts() {
-  const texts: string[] = [];
-  const seen = new Set<string>();
-  for (const el of workPatternOptionNodes()) {
-    const text = normalizeSpace(el.textContent || '');
-    if (!text || /^(選択|未入力|--|－)/.test(text) || seen.has(text)) continue;
-    seen.add(text);
-    texts.push(text);
-  }
-  return texts;
+  const texts = workPatternOptionNodes()
+    .map((el) => normalizeSpace(el.textContent))
+    .filter((text) => text && !UNSET_VALUE_TEXT.test(text));
+  return [...new Set(texts)];
 }
 
 export function workTimeChangeRemarkRow(root: Element) {
