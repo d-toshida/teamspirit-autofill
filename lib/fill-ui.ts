@@ -68,7 +68,6 @@ import {
 import {
   cellAtVisualIndex,
   findColumnIndexByHeader,
-  findRowByHeader,
   isHeadRow,
   rowHeaderText,
   timesheetTable
@@ -343,12 +342,9 @@ function rememberWorkHourTimesheetRow(event: Event) {
 
 // 工数入力サブ画面は勤務表の「工数」セル操作のあとだけ開く。見出しは「工数入力」。
 function workHourInputLabel() {
-  for (const el of queryAllDeep('span')) {
-    if (!isDisplayedPageElement(el)) continue;
-    if (normalizeSpace(el.textContent || '') !== '工数入力') continue;
-    return el;
-  }
-  return null;
+  return queryAllDeep('span').find((el) =>
+    isDisplayedPageElement(el) && normalizeSpace(el.textContent) === '工数入力'
+  ) || null;
 }
 
 async function saveWorkHourTemplateFromScreen() {
@@ -377,13 +373,8 @@ async function saveWorkHourTemplateFromScreen() {
     notify('ジョブ行が見つかりません');
     return;
   }
-  const table = timesheetTable();
-  if (!table || !lastWorkHourRowHeader) {
-    notify('勤務表の対象行が見つかりません');
-    return;
-  }
-  const timesheetRow = findRowByHeader(table, lastWorkHourRowHeader);
-  if (!timesheetRow) {
+  const { table, row: timesheetRow } = currentTimesheetRow(lastWorkHourRowHeader);
+  if (!table || !timesheetRow) {
     notify('勤務表の対象行が見つかりません');
     return;
   }
@@ -425,19 +416,14 @@ function injectWorkHourTemplateSaveButton() {
 }
 
 function removeFillPanel() {
-  const root = document.getElementById(FILL_ROOT_ID);
-  if (root) root.remove();
-}
-
-function closeFillPanel() {
-  removeFillPanel();
-  document.querySelectorAll('.' + FILL_BUTTON_CLASS).forEach((button) => {
-    (button as HTMLButtonElement).disabled = false;
-  });
+  document.getElementById(FILL_ROOT_ID)?.remove();
 }
 
 function cancelFill() {
-  closeFillPanel();
+  removeFillPanel();
+  document.querySelectorAll<HTMLButtonElement>('.' + FILL_BUTTON_CLASS).forEach((button) => {
+    button.disabled = false;
+  });
   clearFillSession();
 }
 
@@ -449,24 +435,22 @@ function setPanelStatus(text: string, isError: boolean) {
 }
 
 function setStepActionButtonsDisabled(disabled: boolean) {
-  const skipButton = document.getElementById('ts-autofill-skip') as HTMLButtonElement | null;
-  const nextButton = document.getElementById('ts-autofill-next') as HTMLButtonElement | null;
-  if (skipButton) skipButton.disabled = disabled;
-  if (nextButton) nextButton.disabled = disabled;
+  for (const id of ['ts-autofill-skip', 'ts-autofill-next']) {
+    const button = document.getElementById(id) as HTMLButtonElement | null;
+    if (button) button.disabled = disabled;
+  }
 }
 
-function fillRunUi(): FillRunUi {
-  return {
-    captureUiState,
-    appendFillLog,
-    persistFillLogs,
-    setPanelStatus,
-    setStepActionButtonsDisabled,
-    showFillEnded,
-    notify,
-    cancelFill
-  };
-}
+const fillRunUi: FillRunUi = {
+  captureUiState,
+  appendFillLog,
+  persistFillLogs,
+  setPanelStatus,
+  setStepActionButtonsDisabled,
+  showFillEnded,
+  notify,
+  cancelFill
+};
 
 function makeButton(label: string, className: string, onClick: () => unknown) {
   const button = document.createElement('button');
@@ -717,7 +701,7 @@ function startFillRun() {
     return;
   }
   removeFillPanel();
-  void runCurrentFillStep(fillRunUi());
+  void runCurrentFillStep(fillRunUi);
 }
 
 function renderStepPanelBody(statusText: string, isError: boolean) {
@@ -739,9 +723,9 @@ function renderStepPanelBody(statusText: string, isError: boolean) {
 
 function showStepPanel() {
   const { actions } = renderStepPanelBody(currentStepStatusText(), false);
-  const skipButton = makeButton('スキップ', 'ts-secondary', () => skipCurrentFillStep('使用者がスキップした', fillRunUi()));
+  const skipButton = makeButton('スキップ', 'ts-secondary', () => skipCurrentFillStep('使用者がスキップした', fillRunUi));
   skipButton.id = 'ts-autofill-skip';
-  const nextButton = makeButton('次のステップ', '', () => runCurrentFillStep(fillRunUi()));
+  const nextButton = makeButton('次のステップ', '', () => runCurrentFillStep(fillRunUi));
   nextButton.id = 'ts-autofill-next';
   actions.append(
     makeButton('中止', 'ts-secondary', () => cancelFill()),
@@ -810,9 +794,7 @@ function injectRowButtons() {
         event.stopPropagation();
         if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
         const header = fillButton!.dataset.rowHeader as string;
-        const table = timesheetTable();
-        const liveRow = table ? findRowByHeader(table, header) : null;
-        if (!liveRow) {
+        if (!currentTimesheetRow(header).row) {
           notify('対象行が見つかりません');
           return;
         }
@@ -859,9 +841,6 @@ export function start() {
   } else {
     startRowButtonWatch();
   }
-
-  // 設定の読み込みはここ。
-  loadFillSettings().catch(() => {});
 
   // background の executeScript が全フレームで候補クリックするときに読む。
   globalThis.__tsAutofill = { clickChoiceByText };
