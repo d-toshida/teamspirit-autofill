@@ -55,7 +55,9 @@ export function activateClick(el: Element | null | undefined) {
     target.dispatchEvent(new PointerEvent('pointerup', mouse));
   } catch (e) { /* 同上 */ }
   target.dispatchEvent(new MouseEvent('mouseup', mouse));
-  target.click();
+  // HTMLElement.click が無い要素は click イベントを送る。
+  if (typeof target.click === 'function') target.click();
+  else target.dispatchEvent(new MouseEvent('click', mouse));
   return true;
 }
 

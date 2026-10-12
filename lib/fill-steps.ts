@@ -14,6 +14,7 @@ import {
   clickChoiceEverywhere,
   clickOverlayCaption,
   clickTimeDialogSave,
+  clickTimesheetRefresh,
   clickWorkHourLookup,
   clickWorkTimeChangeApply,
   displayedAttendanceCaption,
@@ -36,6 +37,7 @@ export type FillAutoStep = {
   failMessage?: string;
   targetIsDisplayed?: () => boolean;
   returnsToTimesheet?: boolean;
+  waitForReloadToast?: boolean;
   run: () => boolean | Promise<boolean>;
 };
 
@@ -76,6 +78,13 @@ function rowColumnClick(columnHeader: string, label: string, rowHeader: string):
         rowHeader,
       }
     })
+  };
+}
+
+function saveRowManual(rowHeader: string): FillManual {
+  return {
+    ...rowColumnClick('保存', '行を保存する', rowHeader),
+    returnsToTimesheet: true
   };
 }
 
@@ -166,6 +175,13 @@ export function buildFillManuals(session: FillStepSession): FillManual[] {
       returnsToTimesheet: true,
       run: () => clickWorkTimeChangeApply()
     },
+    saveRowManual(session.rowHeader),
+    {
+      label: '勤務表を更新する',
+      returnsToTimesheet: true,
+      waitForReloadToast: true,
+      run: () => clickTimesheetRefresh()
+    },
     {
       label: '勤務時間を入力する',
       autos: [
@@ -233,10 +249,7 @@ export function buildFillManuals(session: FillStepSession): FillManual[] {
         },
       ]
     },
-    {
-      ...rowColumnClick('保存', '行を保存する', session.rowHeader),
-      returnsToTimesheet: true
-    },
+    saveRowManual(session.rowHeader),
 
     // 工数列は外側タイトル「デイリーサマリー」。工数入力と「保存して閉じる」はその中。
     {

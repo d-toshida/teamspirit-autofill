@@ -4,8 +4,10 @@
 import { loadWaitSettings } from './fill-config.js';
 import {
   describeFailureProbe,
+  describeTimesheetReloadToast,
   describeTimesheetReturnWait,
   isOnScreenWorkPatternSame,
+  timesheetReloadToastIsDisplayed,
   waitMs,
   waitUntilReady,
   waitUntilReturnedToTimesheet
@@ -196,6 +198,19 @@ async function runCurrentAutoStep(
         () => isRunCancelled(runGeneration)
       ),
       ` returnsToTimesheet ${describeTimesheetReturnWait()}`
+    );
+    if (waitEnded) return waitEnded;
+  }
+  // 再読み込みを促すトーストは2〜3秒で消える。連続実行だけ、出てから更新する。
+  if (!fillSession.stepByStep && step.waitForReloadToast) {
+    const waitEnded = finishIfLoadWaitEnded(
+      await waitUntilReady(
+        timesheetReloadToastIsDisplayed,
+        loadWaitIntervalMs,
+        loadWaitTimeoutMs,
+        () => isRunCancelled(runGeneration)
+      ),
+      ` reloadToast ${describeTimesheetReloadToast()}`
     );
     if (waitEnded) return waitEnded;
   }

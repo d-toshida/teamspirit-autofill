@@ -71,6 +71,9 @@ const WORK_HOUR_PICKLIST_SELECT_SELECTOR = '.task-picklist select.slds-select.ts
 const WORK_TIME_CHANGE_FORM_ROW_SELECTOR = '.timesheet-pc-dialogs-daily-att-request-dialog-form-row';
 const WORK_TIME_CHANGE_FORM_ROW_LABEL_SELECTOR = '.timesheet-pc-dialogs-daily-att-request-dialog-form-row__label';
 const WORK_TIME_CHANGE_APPLY_BUTTON_SELECTOR = '.timesheet-pc-dialogs-daily-att-request-dialog-form-frame__button';
+const TIMESHEET_REFRESH_BUTTON_SELECTOR = 'th.timesheet-pc-main-content-timesheet-heading-row__col-status--table.timesheet-pc-main-content-timesheet-heading-row__col-status--use-fix-daily-request > svg';
+const TIMESHEET_RELOAD_TOAST_SELECTOR = 'span.commons-toast__message';
+const TIMESHEET_RELOAD_TOAST_TEXT = '処理が完了しました。勤務表を再読み込みしてください。';
 
 export function waitMs(durationMs: number) {
   return new Promise((resolve) => setTimeout(resolve, durationMs));
@@ -589,6 +592,24 @@ export function clickWorkTimeChangeApply() {
     isDisplayedPageElement(el) && visibleTextEquals(el, '申請')
   );
   return activateClick(button);
+}
+
+export function clickTimesheetRefresh() {
+  return activateClick(timesheetTable()?.querySelector(TIMESHEET_REFRESH_BUTTON_SELECTOR));
+}
+
+export function timesheetReloadToastIsDisplayed() {
+  return queryAllDeep(TIMESHEET_RELOAD_TOAST_SELECTOR).some((el) =>
+    isDisplayedPageElement(el) && visibleTextEquals(el, TIMESHEET_RELOAD_TOAST_TEXT)
+  );
+}
+
+export function describeTimesheetReloadToast() {
+  const messages = queryAllDeep(TIMESHEET_RELOAD_TOAST_SELECTOR);
+  if (!messages.length) return 'なし';
+  return messages.slice(0, 3).map((el) =>
+    `displayed=${isDisplayedPageElement(el)} text=${shortText(el.textContent, 40)}`
+  ).join(' | ');
 }
 
 // 勤務パターンは react-autosuggest の combobox。候補は配下の li[role=option]。
