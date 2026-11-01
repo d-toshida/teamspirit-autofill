@@ -1,0 +1,38 @@
+# PR の作成・更新時と master への push 時に、型チェックとビルドを行う。
+
+name: CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v7
+
+      - name: Node.js を用意
+        uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      - name: 依存関係インストール
+        run: npm ci
+
+      - name: 型チェック
+        run: npm run compile
+
+      - name: ビルド
+        run: npm run build
