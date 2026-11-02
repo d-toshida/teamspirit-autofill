@@ -1,6 +1,9 @@
 // popup.ts - 拡張機能のアイコンを押したときの画面（ポップアップ）の動作
 
 import { browser } from 'wxt/browser';
+import { extensionVersionLabel } from '../../lib/extension-version.js';
+
+document.getElementById('extensionVersion')!.textContent = extensionVersionLabel();
 
 const statusEl = document.getElementById('status') as HTMLElement;
 
