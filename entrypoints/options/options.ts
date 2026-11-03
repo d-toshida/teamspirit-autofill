@@ -25,6 +25,10 @@ import {
   populateWorkLocationSelect,
   populateWorkPatternSelect
 } from '../../lib/fill-selects.js';
+import { extensionVersionLabel } from '../../lib/extension-version.js';
+
+document.getElementById('extensionVersion')!.textContent = extensionVersionLabel();
+
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 const fillSaveStatus = document.getElementById('fillSaveStatus') as HTMLElement;
 const templateListEl = document.getElementById('templateList') as HTMLSelectElement;
