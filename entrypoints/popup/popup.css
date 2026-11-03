@@ -21,9 +21,8 @@ a.link { font-size: 13px; color: #1f6feb; text-decoration: none; }
 a.link:hover { text-decoration: underline; }
 .hint { font-size: 12px; color: #6b7280; margin: 6px 0 14px; }
 .extension-version {
-  margin: 16px 0 0;
   font-size: 11px;
+  font-weight: 400;
   line-height: 1.4;
   color: #9ca3af;
-  text-align: right;
 }
